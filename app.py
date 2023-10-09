@@ -1,31 +1,47 @@
-import streamlit as st
-import requests
+import os
+import random
+from flask import Flask, request, jsonify
+from pytube import YouTube
+import whisper
 
-# Define the Flask API endpoint
-API_ENDPOINT = "http://127.0.0.1:5000/download_and_transcribe"
+app = Flask(__name__)
 
-# Streamlit app
-st.title("YouTube Audio Transcription")
+# Function to generate a random single-digit filename that hasn't been used before
+def generate_random_filename(used_numbers):
+    while True:
+        random_number = str(random.randint(0, 1000))
+        if random_number not in used_numbers:
+            used_numbers.add(random_number)
+            return random_number
 
-# Get YouTube URL from user input
-yt_url = st.text_input("Enter YouTube URL:")
+# Endpoint to download a video as audio and transcribe it
+@app.route('/download_and_transcribe', methods=['POST'])
+def download_and_transcribe():
+    data = request.get_json()
+    yt_url = data.get('url')
 
-# Handle user input and trigger API call
-if st.button("Transcribe Audio"):
-    if yt_url:
-        # Prepare data for the API request
-        data = {"url": yt_url}
+    # Download the video as audio
+    yt = YouTube(yt_url)
+    video = yt.streams.filter(only_audio=True).first()
+    destination = data.get('destination', os.getcwd())
+    out_file = video.download(output_path=destination)
 
-        # Send a POST request to the Flask API
-        response = requests.post(API_ENDPOINT, json=data)
+    # Generate a random single-digit filename that hasn't been used before
+    used_numbers = set()
+    random_filename = generate_random_filename(used_numbers)
+    new_file = os.path.join(destination, f'{random_filename}.mp3')
+    os.rename(out_file, new_file)
 
-        # Display results
-        if response.status_code == 200:
-            result = response.json()
-            st.write("Title:", result["title"])
-            st.write("Transcription Result:")
-            st.write(result["transcription_result"])
-        else:
-            st.write("Error:", response.status_code)
-            st.write("Failed to transcribe the audio.")
+    # Transcribe the audio
+    model = whisper.load_model("base")
+    result = model.transcribe(new_file)
 
+    response = {
+        'title': yt.title,
+        'downloaded_file_path': new_file,
+        'transcription_result': result['text']
+    }
+    return jsonify(response)
+
+if __name__ == '__main__':
+    app.run(debug=True)
