@@ -66,6 +66,6 @@ To run the provided Python script and start the Flask web application, follow th
 
 4. **Access the Application:**
 
-   Open a web browser and navigate to `http://127.0.0.1:5000` to access the web application and use it through a user interface if one is implemented in the script (not shown in the provided code).
+   Open a web browser and navigate to `http://127.0.0.1:5000` to access the web application and use it through a user interface if one is implemented in the script.
 
 Keep in mind that the script is set to run in debug mode (`app.run(debug=True)`), which is suitable for development. For production deployment, consider configuring the app accordingly for security and performance.
