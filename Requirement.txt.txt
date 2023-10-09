@@ -1,0 +1,4 @@
+Flask==1.1.2
+pytube==10.7.2
+whisper==x.x.x  # Replace with the appropriate version
+Jiwer
